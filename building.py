@@ -15,13 +15,13 @@ cubeList = [[0,0,0],[cubeSide,0,0],[cubeSide,cubeSide,0],[0,cubeSide,0],[0,0,cub
 
 def Building():
 	x = 0
-	while x < 5:
+	while x < 1:
 		y = 0
-		while y < 5:
+		while y < 1:
 			floor = MakeFloor()
-			floors = DuplicateFloors(floor)
-			for f in floors:
-				rs.MoveObjects(f, [x*move_dist,y*move_dist,0])
+			#floors = DuplicateFloors(floor)
+			#for f in floors:
+				#rs.MoveObjects(f, [x*move_dist,y*move_dist,0])
 			y = y + 1
 			print 'made a building'
 		x = x + 1
@@ -35,12 +35,14 @@ def MakeFloor():
 	positive = True # whether the path is traveling positive or negative along the axis
 	travelingX = True # whether the path is traveling along the x or y axis
 	position = [0,0,0]
+	pts = []
 	floorTiles = []
 	for l in lengths:
 		count = 0
 		while count < l:
-			cube = rs.AddBox(cubeList)
-			floorTiles.append(cube)
+			pts.append(rs.AddPoint((position[0],position[1],position[2])))
+			#cube = rs.AddBox(cubeList)
+			#floorTiles.append(cube)
 			if(travelingX):
 				if(positive):
 					position[0] = position[0] + cubeSide
@@ -51,12 +53,14 @@ def MakeFloor():
 					position[1] = position[1] + cubeSide
 				else:
 					position[1] = position[1] - cubeSide
-			rs.MoveObject(cube, position)
+			#rs.MoveObject(cube, position)
 			count = count + 1		
 		# toggle axis
 		travelingX = not travelingX
 		# get a random direction on the axis
 		positive = random.choice([True, False])
+	
+	rs.AddPolyline(pts)
 	return floorTiles
 			
 def GenerateLengths():
