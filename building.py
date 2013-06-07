@@ -15,13 +15,15 @@ cubeList = [[0,0,0],[cubeSide,0,0],[cubeSide,cubeSide,0],[0,cubeSide,0],[0,0,cub
 
 def Building():
 	x = 0
-	while x < 1:
+	while x < 10:
 		y = 0
-		while y < 1:
-			floor = MakeFloor()
-			#floors = DuplicateFloors(floor)
-			#for f in floors:
-				#rs.MoveObjects(f, [x*move_dist,y*move_dist,0])
+		while y < 10:
+			sweeper = MakeFloor()
+			building = ExtrudeFloor(sweeper)
+			rs.MoveObjects(building, [x*move_dist,y*move_dist,0])
+# 			floors = DuplicateFloors(floor)
+# 			for f in floors:
+# 				rs.MoveObjects(f, [x*move_dist,y*move_dist,0])
 			y = y + 1
 			print 'made a building'
 		x = x + 1
@@ -36,13 +38,12 @@ def MakeFloor():
 	travelingX = True # whether the path is traveling along the x or y axis
 	position = [0,0,0]
 	pts = []
+	lines = []
 	floorTiles = []
 	for l in lengths:
 		count = 0
 		while count < l:
 			pts.append(rs.AddPoint((position[0],position[1],position[2])))
-			#cube = rs.AddBox(cubeList)
-			#floorTiles.append(cube)
 			if(travelingX):
 				if(positive):
 					position[0] = position[0] + cubeSide
@@ -59,9 +60,32 @@ def MakeFloor():
 		travelingX = not travelingX
 		# get a random direction on the axis
 		positive = random.choice([True, False])
+
+	# create the initial path from the points generated	
+	lines.append(rs.AddPolyline(pts))
+# 	lines[0] = rs.JoinCurves(lines[0])
+	rs.DeleteObjects(pts)
+	#offset the newly generated line and create another
+	lines.append(rs.OffsetCurve(lines[0],[0,0,0], cubeSide/2))
+	lines.append(rs.OffsetCurve(lines[0],[0,0,0], -cubeSide/2))	
+	# cap the two lines by getting their end points
+	start_pts = [rs.CurveStartPoint(lines[2]), rs.CurveStartPoint(lines[1]) ]
+	end_pts = [rs.CurveEndPoint(lines[2]), rs.CurveEndPoint(lines[1])]
+ 
+	lines.append(rs.AddPolyline(start_pts))
+	lines.append(rs.AddPolyline(end_pts))
 	
-	rs.AddPolyline(pts)
-	return floorTiles
+	
+# 	floor = rs.AddPlanarSrf(lines)
+	rs.DeleteObjects(lines[0])
+	lines.pop(0)
+	
+	sweeper = rs.JoinCurves(lines)
+	rs.DeleteObjects(lines)
+# 	paul = rs.AddLine((0,0,0),(0,0,100))
+# 	rs.AddSweep1(paul,total)
+	
+	return sweeper
 			
 def GenerateLengths():
 	# maximum three segments
@@ -76,7 +100,18 @@ def GenerateLengths():
 				lengths.append(random.randint(min_dist, max_dist))
 		segments = segments + 1
 	return lengths
-	
+
+def ExtrudeFloor(sweeper):
+	floorAmount = random.randint(floorAmountMin,floorAmountMax)
+	extrudeAmount = floor_height * floorAmount
+	rail = rs.AddLine((0,0,0),(0,0,extrudeAmount))
+	building = []
+	building.append(rs.AddSweep1(rail, sweeper))
+	floor = rs.AddPlanarSrf(sweeper)
+	rs.MoveObject(floor, (0,0,extrudeAmount))
+	rs.DeleteObjects([rail,sweeper])
+	building.append(floor)
+	return building
 
 def DuplicateFloors(floor):
 	floorAmount = random.randint(floorAmountMin,floorAmountMax)
