@@ -10,7 +10,7 @@ floor_height = 30
 cubeSide = 100
 cubeHeight = 5
 floorAmountMin = 4
-floorAmountMax = 10
+floorAmountMax = 30
 cubeList = [[0,0,0],[cubeSide,0,0],[cubeSide,cubeSide,0],[0,cubeSide,0],[0,0,cubeHeight],[cubeSide,0,cubeHeight],[cubeSide,cubeSide,cubeHeight],[0,cubeSide,cubeHeight]]
 
 def Building():
@@ -63,7 +63,11 @@ def MakeFloor():
 
 	# create the initial path from the points generated	
 	lines.append(rs.AddPolyline(pts))
-# 	lines[0] = rs.JoinCurves(lines[0])
+
+
+# 	for p in pts:
+# 		rs.AddText('paul', p,20)
+
 	rs.DeleteObjects(pts)
 	#offset the newly generated line and create another
 	lines.append(rs.OffsetCurve(lines[0],[0,0,0], cubeSide/2))
@@ -81,12 +85,51 @@ def MakeFloor():
 	lines.pop(0)
 	
 	sweeper = rs.JoinCurves(lines)
+	
+	sweep_segs = rs.CurvePoints(sweeper)
+
+	found_end = False
+	while found_end == False:
+		count  = 0
+		for x in sweep_segs:
+			if count > 1:
+				#check if sweeper segments are on the same line
+				if (CheckPtsInLine(sweep_segs[count], sweep_segs[count-1], sweep_segs[count-2])):
+					# if so, pop that point out
+					sweep_segs.pop(count-1)
+					break
+			count = count + 1
+			if count == len(sweep_segs):
+				found_end = True
+	
+	#check to see if first and last point are in line
+	if(CheckPtsInLine(sweep_segs[0], sweep_segs[1], sweep_segs[len(sweep_segs)-2])):
+		#delete the first and last elements
+		sweep_segs.pop(0)
+		sweep_segs.pop(len(sweep_segs)-1)
+		print 'here'
+	else:
+		sweep_segs.pop(len(sweep_segs)-1)
+		
+	
+	count = 1
+	for p in sweep_segs:
+		rs.AddText(count, p, 20)
+		count = count + 1
 	rs.DeleteObjects(lines)
 # 	paul = rs.AddLine((0,0,0),(0,0,100))
 # 	rs.AddSweep1(paul,total)
-	
 	return sweeper
-			
+
+def CheckPtsInLine(pt1, pt2, pt3):
+	if (pt1[0] == pt2[0] and pt1[0] == pt3[0]):
+		return True
+	elif (pt1[1] == pt2[1] and pt1[1] == pt3[1]):
+		return True
+	else:
+		return False
+
+		
 def GenerateLengths():
 	# maximum three segments
 	segments = 0
